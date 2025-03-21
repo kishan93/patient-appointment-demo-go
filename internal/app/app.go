@@ -10,12 +10,12 @@ import (
 )
 
 type AppConfig struct {
-	port int
+	Port int
 }
 
 func ConfigWithPort(port int) AppConfig {
 	return AppConfig{
-		port: port,
+		Port: port,
 	}
 }
 
@@ -27,7 +27,7 @@ type App struct {
 
 func New(config AppConfig) App {
 	return App{
-		port:      config.port,
+		port:      config.Port,
 		Mux: http.NewServeMux(),
 	}
 }
@@ -57,6 +57,8 @@ func (a *App) CloseDB() {
 }
 
 func (a *App) Start() error {
+    a.initRouter()
+
 	return http.ListenAndServe(
 		fmt.Sprintf(":%d", a.port),
 		a.Mux,

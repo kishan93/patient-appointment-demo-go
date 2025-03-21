@@ -1,4 +1,4 @@
-package controller
+package routes
 
 type PatientCreateRequest struct {
 	Name    string  `json:"name" validate:"required,max=255"`

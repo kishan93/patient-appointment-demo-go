@@ -1,24 +1,17 @@
-package controller
+package routes
 
 import (
 	"encoding/json"
 	"net/http"
-
-	"patient-appointment-demo-go/internal/database"
+	"patient-appointment-demo-go/internal/repositories"
 	"patient-appointment-demo-go/internal/utils"
 
-	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type AuthController struct {
-	queries database.Queries
-}
-
-func NewAuthController(dbConn *pgx.Conn) *AuthController {
-	return &AuthController{
-		queries: *database.New(dbConn),
-	}
+type AuthRouter struct {
+    mux *http.ServeMux
+	repo repositories.UserRepositoryInterface
 }
 
 type loginRequest struct {
@@ -30,7 +23,28 @@ type loginResponse struct {
 	Token string `json:"token"`
 }
 
-func (u *AuthController) Login(w http.ResponseWriter, r *http.Request) {
+func NewAuthRouter(mux *http.ServeMux, repo repositories.UserRepositoryInterface) *AuthRouter {
+	return &AuthRouter{
+		repo: repo,
+        mux: mux,
+	}
+}
+
+func (r *AuthRouter) Register() *AuthRouter {
+    authMiddleware := NewAuthMiddleware(r.repo)
+	NewRoute("POST", "/api/auth/login").
+        SetHandler(r.Login).
+        Register(r.mux)
+
+	NewRoute("POST", "/api/auth/logout").
+        SetHandler(r.Logout).
+        AddMiddlewares(authMiddleware.ValidateLogin).
+        Register(r.mux)
+
+	return r
+}
+
+func (a *AuthRouter) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -38,7 +52,8 @@ func (u *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch user from DB
-	user, err := u.queries.GetUserByEmail(r.Context(), req.Email) // Ensure GetUserByEmail exists in database.Queries
+	user, err := a.repo.GetByEmail(r.Context(), req.Email) // Ensure GetUserByEmail exists in database.Queries
+
 	if err != nil {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -56,11 +71,10 @@ func (u *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(loginResponse{Token: tokenString})
 }
 
-func (u *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
+func (a *AuthRouter) Logout(w http.ResponseWriter, r *http.Request) {
 	// TODO: implement token blacklisting
 
 	w.WriteHeader(http.StatusOK)

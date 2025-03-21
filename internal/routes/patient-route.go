@@ -1,29 +1,65 @@
-package controller
+package routes
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"patient-appointment-demo-go/internal/repositories"
 	"strconv"
 	"time"
-
-	"patient-appointment-demo-go/internal/repositories"
 
 	"github.com/go-playground/validator/v10"
 )
 
-type PatientController struct {
-	repo repositories.PatientRepositoryInterface
+type PatientRouter struct {
+	mux      *http.ServeMux
+	userRepo repositories.UserRepositoryInterface
+	repo     repositories.PatientRepositoryInterface
 }
 
-func NewPatientController(repo repositories.PatientRepositoryInterface) PatientController {
-	return PatientController{
-		repo: repo,
-	}
+func NewPatientRouter(mux *http.ServeMux, patientRepo repositories.PatientRepositoryInterface, userRepo repositories.UserRepositoryInterface) *PatientRouter {
+    return &PatientRouter{
+        mux: mux,
+        repo: patientRepo,
+        userRepo: userRepo,
+    }
 }
 
-func (pc *PatientController) GetAll(w http.ResponseWriter, r *http.Request) {
+func (r *PatientRouter) Register() *PatientRouter {
+    authMiddleware := NewAuthMiddleware(r.userRepo)
+
+	NewRoute("GET", "/api/patients").
+        SetHandler(r.GetAll).
+        AddMiddlewares(authMiddleware.ValidateLogin).
+        Register(r.mux)
+
+	NewRoute("GET", "/api/patients/{id}").
+        SetHandler(r.Get).
+        AddMiddlewares(authMiddleware.ValidateLogin).
+        Register(r.mux)
+
+
+	NewRoute("POST", "/api/patients").
+        SetHandler(r.Create).
+        AddMiddlewares(authMiddleware.ValidateLogin).
+        Register(r.mux)
+
+	NewRoute("PUT", "/api/patients/{id}").
+        SetHandler(r.Update).
+        AddMiddlewares(authMiddleware.ValidateLogin).
+        Register(r.mux)
+
+	NewRoute("DELETE", "/api/patients/{id}").
+        SetHandler(r.Delete).
+        AddMiddlewares(authMiddleware.ValidateLogin).
+        Register(r.mux)
+
+	return r
+}
+
+
+func (p *PatientRouter) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	name := r.URL.Query().Get("name")
 	sortBy := r.URL.Query().Get("sort_by")
@@ -32,7 +68,7 @@ func (pc *PatientController) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 	defer cancel()
 
-	patients, err := pc.repo.GetAll(ctx, repositories.GetPatientsOption{
+	patients, err := p.repo.GetAll(ctx, repositories.GetPatientsOption{
 		Name:          name,
 		SortBy:        sortBy,
 		SortDirection: sortDirection,
@@ -44,11 +80,10 @@ func (pc *PatientController) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(patients)
 }
 
-func (pc *PatientController) Get(w http.ResponseWriter, r *http.Request) {
+func (p *PatientRouter) Get(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 
@@ -61,17 +96,16 @@ func (pc *PatientController) Get(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 	defer cancel()
 
-	patient, err := pc.repo.Get(ctx, int32(id))
+	patient, err := p.repo.Get(ctx, int32(id))
 	if err != nil {
 		http.Error(w, "Patient not found", http.StatusNotFound)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(patient)
 }
 
-func (pc *PatientController) Create(w http.ResponseWriter, r *http.Request) {
+func (p *PatientRouter) Create(w http.ResponseWriter, r *http.Request) {
 	var req PatientCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -94,7 +128,7 @@ func (pc *PatientController) Create(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 	defer cancel()
 
-	patient, err := pc.repo.Create(ctx, repositories.CreatePatientParams{
+	patient, err := p.repo.Create(ctx, repositories.CreatePatientParams{
 		Name:    req.Name,
 		Phone:   req.Phone,
 		Email:   req.Email,
@@ -111,11 +145,10 @@ func (pc *PatientController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(patient)
 }
 
-func (pc *PatientController) Update(w http.ResponseWriter, r *http.Request) {
+func (p *PatientRouter) Update(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 
@@ -147,7 +180,7 @@ func (pc *PatientController) Update(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 	defer cancel()
 
-	updatedPatient, err := pc.repo.Update(ctx, int32(id), repositories.UpdatePatientParams{
+	updatedPatient, err := p.repo.Update(ctx, int32(id), repositories.UpdatePatientParams{
 		Name:    req.Name,
 		Phone:   req.Phone,
 		Email:   req.Email,
@@ -163,11 +196,10 @@ func (pc *PatientController) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(updatedPatient)
 }
 
-func (pc *PatientController) Delete(w http.ResponseWriter, r *http.Request) {
+func (p *PatientRouter) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 
@@ -179,7 +211,7 @@ func (pc *PatientController) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 	defer cancel()
 
-	err = pc.repo.Delete(ctx, int32(id))
+	err = p.repo.Delete(ctx, int32(id))
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Failed to delete patient", http.StatusInternalServerError)

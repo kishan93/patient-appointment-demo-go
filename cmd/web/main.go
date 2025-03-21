@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"patient-appointment-demo-go/internal/app"
-	"patient-appointment-demo-go/internal/controller"
 	"strconv"
 
 	"github.com/joho/godotenv"
@@ -40,8 +39,6 @@ func main() {
 	defer app.CloseDB()
 
 	fmt.Println("Succesfully connected to database")
-
-    controller.NewRouter(&app)
 
 	fmt.Printf("Starting server on port %d\n", appPort)
 	err = app.Start()

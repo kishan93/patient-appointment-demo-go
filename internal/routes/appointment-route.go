@@ -1,4 +1,4 @@
-package controller
+package routes
 
 import (
 	"context"
@@ -13,17 +13,65 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type AppointmentController struct {
-	repo repositories.AppointmentRepositoryInterface
+type AppointmentRouter struct {
+	mux      *http.ServeMux
+	userRepo repositories.UserRepositoryInterface
+	repo     repositories.AppointmentRepositoryInterface
 }
 
-func NewAppointmentController(repo repositories.AppointmentRepositoryInterface) AppointmentController {
-	return AppointmentController{
-		repo: repo,
-	}
+func NewAppointmentRouter(mux *http.ServeMux, appointmentRepo repositories.AppointmentRepositoryInterface, userRepo repositories.UserRepositoryInterface) *AppointmentRouter {
+    return &AppointmentRouter{
+        mux: mux,
+        repo: appointmentRepo,
+        userRepo: userRepo,
+    }
 }
 
-func (ac *AppointmentController) GetAll(w http.ResponseWriter, r *http.Request) {
+func (r *AppointmentRouter) Register() *AppointmentRouter {
+    authMiddleware := NewAuthMiddleware(r.userRepo)
+
+	NewRoute("GET", "/api/appointments").
+        SetHandler(r.GetAll).
+        AddMiddlewares(authMiddleware.ValidateLogin).
+        Register(r.mux)
+
+	NewRoute("GET", "/api/appointments/date/{date}").
+        SetHandler(r.GetByDate).
+        AddMiddlewares(authMiddleware.ValidateLogin).
+        Register(r.mux)
+
+	NewRoute("GET", "/api/patients/{patientId}/appointments").
+        SetHandler(r.GetByPatient).
+        AddMiddlewares(authMiddleware.ValidateLogin).
+        Register(r.mux)
+
+	NewRoute("GET", "/api/appointments/{id}").
+        SetHandler(r.Get).
+        AddMiddlewares(authMiddleware.ValidateLogin).
+        Register(r.mux)
+
+	NewRoute("POST", "/api/patients/{patientId}/appointments").
+        SetHandler(r.Create).
+        AddMiddlewares(authMiddleware.ValidateLogin).
+        Register(r.mux)
+
+	NewRoute("PUT", "/api/appointments/{id}").
+        SetHandler(r.Update).
+        AddMiddlewares(
+            authMiddleware.ValidateLogin,
+            authMiddleware.ValidateRole("doctor"),
+        ).
+        Register(r.mux)
+
+	NewRoute("DELETE", "/api/appointments/{id}").
+        SetHandler(r.Delete).
+        AddMiddlewares(authMiddleware.ValidateLogin).
+        Register(r.mux)
+
+	return r
+}
+
+func (ac *AppointmentRouter) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
@@ -38,7 +86,7 @@ func (ac *AppointmentController) GetAll(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(appointments)
 }
 
-func (ac *AppointmentController) GetByDate(w http.ResponseWriter, r *http.Request) {
+func (ac *AppointmentRouter) GetByDate(w http.ResponseWriter, r *http.Request) {
 	date := r.PathValue("date")
 
 	parsedDate, err := time.Parse("2006-01-02", date)
@@ -63,7 +111,7 @@ func (ac *AppointmentController) GetByDate(w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(appointments)
 }
 
-func (ac *AppointmentController) GetByPatient(w http.ResponseWriter, r *http.Request) {
+func (ac *AppointmentRouter) GetByPatient(w http.ResponseWriter, r *http.Request) {
 	patientIdStr := r.PathValue("patientId")
 	patientId, err := strconv.ParseInt(patientIdStr, 10, 64)
 
@@ -86,7 +134,7 @@ func (ac *AppointmentController) GetByPatient(w http.ResponseWriter, r *http.Req
 	json.NewEncoder(w).Encode(appointments)
 }
 
-func (ac *AppointmentController) Get(w http.ResponseWriter, r *http.Request) {
+func (ac *AppointmentRouter) Get(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 
@@ -109,14 +157,14 @@ func (ac *AppointmentController) Get(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (ac *AppointmentController) Create(w http.ResponseWriter, r *http.Request) {
+func (ac *AppointmentRouter) Create(w http.ResponseWriter, r *http.Request) {
 
 	patientIdStr := r.PathValue("patientId")
 	patientId, err := strconv.ParseInt(patientIdStr, 10, 64)
 
 	if err != nil {
         fmt.Println(err)
-		http.Error(w, "invalid patient id", http.StatusBadRequest)
+		http.Error(w, "Invalid patient id", http.StatusBadRequest)
         return
 	}
 
@@ -161,7 +209,7 @@ func (ac *AppointmentController) Create(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(appointment)
 }
 
-func (ac *AppointmentController) Update(w http.ResponseWriter, r *http.Request) {
+func (ac *AppointmentRouter) Update(w http.ResponseWriter, r *http.Request) {
 
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -196,7 +244,7 @@ func (ac *AppointmentController) Update(w http.ResponseWriter, r *http.Request) 
 
 }
 
-func (ac *AppointmentController) Delete(w http.ResponseWriter, r *http.Request) {
+func (ac *AppointmentRouter) Delete(w http.ResponseWriter, r *http.Request) {
 
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)

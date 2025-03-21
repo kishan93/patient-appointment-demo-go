@@ -1,4 +1,4 @@
-package controller
+package routes
 
 import (
 	"context"
@@ -7,18 +7,21 @@ import (
 	"strings"
 
 	"patient-appointment-demo-go/internal/database"
+	"patient-appointment-demo-go/internal/repositories"
 	"patient-appointment-demo-go/internal/utils"
 )
 
 type AuthMiddleware struct {
-	queries database.Queries
+	userRepo repositories.UserRepositoryInterface
 }
 
-func NewAuthMiddleware(queries database.Queries) *AuthMiddleware {
-	return &AuthMiddleware{queries: queries}
+func NewAuthMiddleware(userRepo repositories.UserRepositoryInterface) AuthMiddleware {
+	return AuthMiddleware{
+		userRepo: userRepo,
+	}
 }
 
-func (m *AuthMiddleware) ValidateLogin(next http.HandlerFunc) http.HandlerFunc {
+func (m AuthMiddleware) ValidateLogin(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := extractAuthToken(r)
 		if token == "" {
@@ -32,7 +35,7 @@ func (m *AuthMiddleware) ValidateLogin(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		user, err := m.queries.GetUser(r.Context(), userID)
+		user, err := m.userRepo.Get(r.Context(), userID)
 		if err != nil {
 			http.Error(w, "User not found", http.StatusUnauthorized)
 			return
@@ -44,21 +47,23 @@ func (m *AuthMiddleware) ValidateLogin(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func (m *AuthMiddleware) ValidateRole(next http.HandlerFunc, allowedRoles ...string) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := getUserFromContext(r)
-		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
+func (m AuthMiddleware) ValidateRole(allowedRoles ...string) func(http.HandlerFunc) http.HandlerFunc{
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, err := getUserFromContext(r)
+			if err != nil {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
 
-		if !hasRole(user.Type, allowedRoles) {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-			return
-		}
+			if !hasRole(user.Type, allowedRoles) {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
 
-		next.ServeHTTP(w, r)
-	})
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func extractAuthToken(r *http.Request) string {
