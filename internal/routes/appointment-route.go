@@ -83,7 +83,7 @@ func (ac *AppointmentRouter) GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(appointments)
+	json.NewEncoder(w).Encode(AppointmentDbArrayToResponse(appointments))
 }
 
 func (ac *AppointmentRouter) GetByDate(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +108,7 @@ func (ac *AppointmentRouter) GetByDate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(appointments)
+	json.NewEncoder(w).Encode(AppointmentDbArrayToResponse(appointments))
 }
 
 func (ac *AppointmentRouter) GetByPatient(w http.ResponseWriter, r *http.Request) {
@@ -131,7 +131,7 @@ func (ac *AppointmentRouter) GetByPatient(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(appointments)
+	json.NewEncoder(w).Encode(AppointmentDbArrayToResponse(appointments))
 }
 
 func (ac *AppointmentRouter) Get(w http.ResponseWriter, r *http.Request) {
@@ -153,7 +153,7 @@ func (ac *AppointmentRouter) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(appointment)
+	json.NewEncoder(w).Encode(AppointmentDbToResponse(appointment))
 
 }
 
@@ -206,7 +206,7 @@ func (ac *AppointmentRouter) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(appointment)
+	json.NewEncoder(w).Encode(AppointmentDbToResponse(appointment))
 }
 
 func (ac *AppointmentRouter) Update(w http.ResponseWriter, r *http.Request) {
@@ -240,7 +240,7 @@ func (ac *AppointmentRouter) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(appointment)
+	json.NewEncoder(w).Encode(AppointmentDbToResponse(appointment))
 
 }
 

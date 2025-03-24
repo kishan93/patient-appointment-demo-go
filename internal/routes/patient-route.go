@@ -80,7 +80,7 @@ func (p *PatientRouter) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(patients)
+	json.NewEncoder(w).Encode(PatientDbArrayToResponse(patients))
 }
 
 func (p *PatientRouter) Get(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +102,7 @@ func (p *PatientRouter) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(patient)
+	json.NewEncoder(w).Encode(PatientDbToResponse(patient))
 }
 
 func (p *PatientRouter) Create(w http.ResponseWriter, r *http.Request) {
@@ -145,7 +145,7 @@ func (p *PatientRouter) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(patient)
+	json.NewEncoder(w).Encode(PatientDbToResponse(patient))
 }
 
 func (p *PatientRouter) Update(w http.ResponseWriter, r *http.Request) {
@@ -196,7 +196,7 @@ func (p *PatientRouter) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(updatedPatient)
+	json.NewEncoder(w).Encode(PatientDbToResponse(updatedPatient))
 }
 
 func (p *PatientRouter) Delete(w http.ResponseWriter, r *http.Request) {

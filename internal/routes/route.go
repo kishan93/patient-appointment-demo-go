@@ -38,6 +38,7 @@ func (r *Route) Register(mux *http.ServeMux) {
 		mStack = m(mStack)
     }
 
+    fmt.Printf("ROUTE: %s %s\n", r.Method, r.Path)
 	mux.Handle(
 		fmt.Sprintf("%s %s", r.Method, r.Path),
 		mStack,

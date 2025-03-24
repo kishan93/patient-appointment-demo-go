@@ -57,11 +57,9 @@ func (a *App) CloseDB() {
 }
 
 func (a *App) Start() error {
-    a.initRouter()
-
 	return http.ListenAndServe(
 		fmt.Sprintf(":%d", a.port),
-		a.Mux,
+		a.initRouter(),
 	)
 }
 
