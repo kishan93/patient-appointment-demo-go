@@ -7,14 +7,14 @@ import (
 
 
 func (a *App) UserRepo() repositories.UserRepositoryInterface {
-    return repositories.NewUserRepository(*database.New(a.DbConn))
+    return repositories.NewUserRepository(database.New(a.DbConn))
 }
 
 func (a *App) PatientRepo() repositories.PatientRepositoryInterface {
-    return repositories.NewPatientRepository(*database.New(a.DbConn))
+    return repositories.NewPatientRepository(database.New(a.DbConn))
 }
 
 func (a *App) AppointmentRepo() repositories.AppointmentRepositoryInterface {
-    return repositories.NewAppointmentRepository(*database.New(a.DbConn))
+    return repositories.NewAppointmentRepository(database.New(a.DbConn))
 }
 

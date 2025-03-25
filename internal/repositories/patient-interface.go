@@ -13,3 +13,10 @@ type PatientRepositoryInterface interface {
 	Delete(ctx context.Context, id int32) error
 }
 
+type PatientQueriesContract interface {
+    GetAllPatients(context.Context, database.GetAllPatientsParams) ([]database.Patient, error)
+    GetPatientByID(context.Context, int32) (database.Patient, error)
+    CreatePatient(context.Context, database.CreatePatientParams) (database.Patient, error)
+    UpdatePatient(context.Context, database.UpdatePatientParams) (database.Patient, error)
+    DeletePatient(context.Context, int32) error
+}

@@ -6,7 +6,7 @@ import (
 )
 
 type UserRepository struct {
-	queries database.Queries
+	queries UserQueriesContract
 }
 
 type CreateUserParams struct {
@@ -20,7 +20,7 @@ type UpdateUserParams struct {
 	Password string
 }
 
-func NewUserRepository(queries database.Queries) UserRepositoryInterface {
+func NewUserRepository(queries UserQueriesContract) UserRepositoryInterface {
 	return &UserRepository{
 		queries: queries,
 	}

@@ -14,3 +14,11 @@ type UserRepositoryInterface interface {
 	Delete(ctx context.Context, id int32) error
 }
 
+type UserQueriesContract interface {
+    GetAllUsers(context.Context) ([]database.User, error)
+    GetUserByEmail(context.Context, string) (database.User, error)
+    GetUser(context.Context, int32) (database.User, error)
+    CreateUser(context.Context, database.CreateUserParams) (database.User, error)
+    UpdateUser(context.Context, database.UpdateUserParams) (database.User, error)
+    DeleteUser(context.Context, int32) error
+}

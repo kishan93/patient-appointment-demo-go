@@ -9,7 +9,7 @@ import (
 )
 
 type AppointmentRepository struct {
-	queries database.Queries
+	queries AppointmentQueriesContract
 }
 
 type CreateAppointmentParams struct {
@@ -22,7 +22,7 @@ type UpdateAppointmentParams struct {
 	DoctorNotes  *string
 }
 
-func NewAppointmentRepository(queries database.Queries) AppointmentRepositoryInterface {
+func NewAppointmentRepository(queries AppointmentQueriesContract) AppointmentRepositoryInterface {
 	return &AppointmentRepository{
 		queries: queries,
 	}

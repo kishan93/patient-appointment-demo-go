@@ -9,7 +9,7 @@ import (
 )
 
 type PatientRepository struct {
-	queries database.Queries
+	queries PatientQueriesContract
 }
 
 type CreatePatientParams struct {
@@ -40,10 +40,10 @@ type GetPatientsOption struct {
 	SortDirection string
 }
 
-func NewPatientRepository(queries database.Queries) PatientRepositoryInterface {
+func NewPatientRepository(queries PatientQueriesContract) PatientRepositoryInterface {
 	return &PatientRepository{
-        queries: queries,
-    }
+		queries: queries,
+	}
 }
 
 func (p *PatientRepository) GetAll(ctx context.Context, option GetPatientsOption) ([]database.Patient, error) {
@@ -64,11 +64,9 @@ func (p *PatientRepository) Get(ctx context.Context, id int32) (database.Patient
 	return patient, err
 }
 
-func (pc *PatientRepository) Create(ctx context.Context, data CreatePatientParams) (database.Patient, error) {
+func (p *PatientRepository) Create(ctx context.Context, data CreatePatientParams) (database.Patient, error) {
 
-    //TODO: validate email or phone not already taken
-
-    weightNumeric := pgtype.Numeric{
+	weightNumeric := pgtype.Numeric{
 		Int:   big.NewInt(int64(data.Weight * 100)),
 		Exp:   -2,
 		Valid: data.Weight > 0,
@@ -78,7 +76,7 @@ func (pc *PatientRepository) Create(ctx context.Context, data CreatePatientParam
 		Exp:   -2,
 		Valid: data.Height > 0,
 	}
-	patient, err := pc.queries.CreatePatient(ctx, database.CreatePatientParams{
+	patient, err := p.queries.CreatePatient(ctx, database.CreatePatientParams{
 		Name:    data.Name,
 		Phone:   pgtype.Text{String: data.Phone, Valid: data.Phone != ""},
 		Email:   data.Email,
@@ -92,11 +90,11 @@ func (pc *PatientRepository) Create(ctx context.Context, data CreatePatientParam
 	return patient, err
 }
 
-func (pc *PatientRepository) Update(ctx context.Context, id int32, data UpdatePatientParams) (database.Patient, error) {
+func (p *PatientRepository) Update(ctx context.Context, id int32, data UpdatePatientParams) (database.Patient, error) {
 
-    //TODO: validate email or phone not already taken
+	//TODO: validate email or phone not already taken
 
-    weightNumeric := pgtype.Numeric{
+	weightNumeric := pgtype.Numeric{
 		Int:   big.NewInt(int64(data.Weight * 100)),
 		Exp:   -2,
 		Valid: data.Weight > 0,
@@ -106,8 +104,8 @@ func (pc *PatientRepository) Update(ctx context.Context, id int32, data UpdatePa
 		Exp:   -2,
 		Valid: data.Height > 0,
 	}
-	updatedPatient, err := pc.queries.UpdatePatient(ctx, database.UpdatePatientParams{
-        ID: id,
+	updatedPatient, err := p.queries.UpdatePatient(ctx, database.UpdatePatientParams{
+		ID:      id,
 		Name:    data.Name,
 		Phone:   pgtype.Text{String: data.Phone, Valid: data.Phone != ""},
 		Email:   data.Email,
@@ -121,9 +119,9 @@ func (pc *PatientRepository) Update(ctx context.Context, id int32, data UpdatePa
 	return updatedPatient, err
 }
 
-func (pc *PatientRepository) Delete(ctx context.Context, id int32) error {
+func (p *PatientRepository) Delete(ctx context.Context, id int32) error {
 
-	err := pc.queries.DeletePatient(ctx, id)
+	err := p.queries.DeletePatient(ctx, id)
 
 	return err
 }
